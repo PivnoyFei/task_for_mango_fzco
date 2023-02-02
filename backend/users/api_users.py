@@ -47,7 +47,7 @@ async def me(user: Record = PROTECTED) -> UserOut:
 @router.get("/{username}", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def user_id(username: str) -> UserOut | JSONResponse:
     """ User profile. Available to all users. """
-    return await db_user.user_by_username(username) or NOT_FOUND
+    return await db_user.by_username(username) or NOT_FOUND
 
 
 @router.put("/{username}", response_model=UserOut, status_code=status.HTTP_200_OK)

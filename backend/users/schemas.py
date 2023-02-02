@@ -1,5 +1,5 @@
-import datetime
 import re
+from datetime import datetime
 from typing import Any
 
 from fastapi import HTTPException, status
@@ -15,7 +15,7 @@ class UserUpdate(BaseModel):
 class UserBase(BaseModel):
     firstname: str
     lastname: str
-    image: str | None = None
+    image: str | None = ""
     username: str = Field(..., min_length=5, max_length=25)
     phone: str
     email: EmailStr
@@ -23,7 +23,7 @@ class UserBase(BaseModel):
 
 class UserOut(UserBase):
     id: int
-    timestamp: datetime.datetime
+    timestamp: datetime
 
 
 class UserCreate(UserBase):
@@ -63,5 +63,9 @@ class TokenPayload(BaseModel):
     exp: int
 
 
-class TokenBase(BaseModel):
+class TokenRefresh(BaseModel):
     refresh_token: str = Field(...,)
+
+
+class TokenAccess(BaseModel):
+    access_token: str = Field(...,)

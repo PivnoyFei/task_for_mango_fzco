@@ -9,7 +9,7 @@ from starlette.requests import Request
 from users import utils
 from users.deps_auth import OAuth2PasswordRequestForm as OAuth2Form
 from users.models import User
-from users.schemas import TokenBase, TokenSchema, UserOut
+from users.schemas import TokenRefresh, TokenSchema, UserOut
 
 router = APIRouter(prefix='/auth', tags=["auth"])
 db_redis = Redis.from_url(REDIS_URL, decode_responses=True)
@@ -36,7 +36,7 @@ async def login(request: Request, user: OAuth2Form = Depends()) -> Any:
 
 
 @router.post('/refresh', response_model=TokenSchema, status_code=status.HTTP_200_OK)
-async def refresh_token(request: Request, token: TokenBase) -> Any:
+async def refresh_token(request: Request, token: TokenRefresh) -> Any:
     """
     Validates the user's IP address and refresh token against a database entry.
     If the ip or refresh token doesn't match, it redirects to the authorization page..

@@ -20,3 +20,5 @@ types-redis==4.4.0.3
 aiofiles==22.1.0
 types-aiofiles==22.1.0.6
 Pillow==9.4.0
+websockets==10.4
+# uvicorn[standard]

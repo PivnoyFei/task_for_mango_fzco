@@ -20,9 +20,19 @@ user = sa.Table(
 
 
 class User(Base):
-    async def user_by_username(self, username: str) -> Record:
+    async def by_username(self, username: str) -> Record | None:
         return await self.database.fetch_one(
-            sa.select(user).where(user.c.username == username)
+            sa.select(
+                user.c.id,
+                user.c.username,
+                user.c.firstname,
+                user.c.lastname,
+                user.c.image,
+                user.c.phone,
+                user.c.email,
+                user.c.timestamp,
+                user.c.is_active,
+            ).where(user.c.username == username)
         )
 
     async def is_email(self, email: str) -> Record | None:

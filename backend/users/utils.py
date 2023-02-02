@@ -92,7 +92,7 @@ async def check_token(token: str, secret: str, refresh_host: str = '') -> Any:
     except (JWTError, ValidationError):
         raise exception
 
-    user = await db_user.user_by_username(token_data.sub)
+    user = await db_user.by_username(token_data.sub)
     if not user:
         raise exception
     return user

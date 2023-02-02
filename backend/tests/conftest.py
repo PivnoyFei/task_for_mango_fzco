@@ -103,3 +103,8 @@ def username_exists() -> dict:
         "email": "unique@fake.fake",
         "password": "unique",
     }
+
+
+@pytest.fixture
+def room() -> dict:
+    return {"name": "fakeroom"}

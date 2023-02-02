@@ -1,5 +1,6 @@
 from typing import Any
 
+from chats import api_chats
 from db import database, engine, metadata
 from fastapi import FastAPI, status
 from fastapi.exceptions import RequestValidationError
@@ -9,7 +10,7 @@ from settings import AVATAR_ROOT, AVATAR_URL, MEDIA_ROOT, MEDIA_URL
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from users import api_auth, api_users
 
-app = FastAPI(title="Test task for MANGO FZCO")
+app = FastAPI(title="Test task for MANGO FZCO", openapi_url="/api/openapi.json",)
 
 app.mount(f"/{MEDIA_URL}", StaticFiles(directory=MEDIA_ROOT), name=MEDIA_URL)
 app.mount(f"/{AVATAR_URL}", StaticFiles(directory=AVATAR_ROOT), name=AVATAR_URL)
@@ -62,3 +63,4 @@ async def main() -> dict[str, str]:
 
 app.include_router(api_auth.router, prefix="/api")
 app.include_router(api_users.router, prefix="/api")
+app.include_router(api_chats.router, prefix="/api")
