@@ -1,7 +1,6 @@
 from datetime import datetime
-from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class UserWeb(BaseModel):
@@ -11,6 +10,7 @@ class UserWeb(BaseModel):
     image: str | None = ""
     username: str
     timestamp: datetime
+    is_active: bool
 
 
 class MessageWeb(BaseModel):
@@ -22,7 +22,8 @@ class RoomName(BaseModel):
     name: str
 
 
-class RoomWeb(RoomName):
-    members: Optional[list[UserWeb]] = []
-    messages: Optional[list[MessageWeb]] = []
-    active: bool = False
+class RoomOut(RoomName):
+    id: int
+    timestamp: datetime
+    is_active: bool | None = False
+    is_count: int | None = 0

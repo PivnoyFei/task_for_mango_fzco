@@ -39,6 +39,9 @@ AVATAR_URL = "avatar"
 MEDIA_ROOT = os.path.join(BASE_DIR, MEDIA_URL)
 AVATAR_ROOT = os.path.join(BASE_DIR, MEDIA_URL, AVATAR_URL)
 
+LIMIT = 15
+LIMIT_MAX = 50
+
 ALLOWED_TYPES = ("jpeg", "jpg", "png", "gif")
 SIZES = [400, 100, 50]
 INVALID_FILE = "Please upload a valid image."
