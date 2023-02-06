@@ -21,11 +21,12 @@ POSTGRES_PORT = os.getenv("POSTGRES_PORT", default="5432")
 
 REDIS_HOST = os.getenv("REDIS_HOST", default="localhost")
 REDIS_PORT = os.getenv("REDIS_PORT", default="6379")
-REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 
 TESTING = os.getenv("TESTING", default="False")
 if TESTING == "True":
+    REDIS_HOST = "redis-test"
     POSTGRES_SERVER = "db-test"
+REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 DATABASE_URL = (f"postgresql://{POSTGRES_USER}:"
                 f"{POSTGRES_PASSWORD}@"
                 f"{POSTGRES_SERVER}:"

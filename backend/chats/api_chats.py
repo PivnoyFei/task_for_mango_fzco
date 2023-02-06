@@ -61,6 +61,7 @@ async def get_members(
 
 @router.post("/room/{name}", status_code=status.HTTP_201_CREATED)
 async def add_user_in_chat(name: str, friend: Friend, user: UserWeb = PROTECTED) -> JSONResponse:
+    """Доступно только для участников чата."""
     room = await db_member.user_in_room(name, user.id)
     if room:
         _friend = await db_user.is_username(friend.username)
@@ -101,7 +102,7 @@ async def websocket_endpoint(
     """
     Структура сообщений между пользователем и сервером: {
         "type": "Отключает соединение - disconnect или удаляет пользователя из группы - delete",
-        "page": "Выдает список сообщений. Лимит задается при подключении. - Номер страницы.",
+        "page": "Выдает список сообщений "messages". Лимит задается при подключении в limit.",
         "key": "uuid сообщения.",
         "content": "Текст сообщения.",
     }
