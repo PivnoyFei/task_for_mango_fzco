@@ -1,6 +1,9 @@
+import os
+from pathlib import Path
 from typing import Any
 
 from fastapi import status
+from settings import AVATAR_ROOT
 from tests.conftest import TEST_HOST, Cache
 
 
@@ -69,14 +72,14 @@ def test_post_login(client: Any, user_one: dict, user_other: dict, host: Any) ->
     assert "refresh_token" in response.json()
 
     access_token = response.json()["access_token"]
-    Cache.headers = {"authorization": f"Bearer {access_token}"}
+    Cache.headers = {"Authorization": f"Bearer {access_token}"}
     Cache.refresh_token = {"refresh_token": response.json()["refresh_token"]}
 
     data = {"username": user_other["username"], "password": user_other["password"]}
     response = client.post("/api/auth/login", data=data)
     assert response.status_code == status.HTTP_200_OK
     access_token = response.json()["access_token"]
-    Cache.headers_other = {"authorization": f"Bearer {access_token}"}
+    Cache.headers_other = {"Authorization": f"Bearer {access_token}"}
 
 
 def test_get_me(client: Any, user_one: dict) -> None:
@@ -111,12 +114,12 @@ def test_post_token_refresh_other_ip(client: Any, host: Any) -> None:
     assert response.json() == {'detail': 'Invalid credentials'}
 
 
-def test_put_user_update(client: Any, user_one: dict) -> None:
+def test_put_user_update(client: Any, user_one: dict, image: str) -> None:
     username = user_one["username"]
     user_dict = {
         "firstname": "update",
         "lastname": "",
-        "image": "",
+        "image": image,
     }
     response = client.put(
         f"/api/users/{username}",
@@ -126,3 +129,15 @@ def test_put_user_update(client: Any, user_one: dict) -> None:
     assert response.status_code == 200
     assert response.json()["firstname"] == "update"
     assert response.json()["lastname"] == user_one["lastname"]
+    assert len(os.listdir(AVATAR_ROOT)) - 1 == 4
+
+    response = client.put(
+        f"/api/users/{username}",
+        headers=Cache.headers,
+        json={"image": ""},
+    )
+    assert len(os.listdir(AVATAR_ROOT)) - 1 == 4
+
+    for p in Path(AVATAR_ROOT).glob("*.png"):
+        p.unlink()
+    assert len(os.listdir(AVATAR_ROOT)) - 1 == 0

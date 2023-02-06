@@ -1,10 +1,11 @@
 import uuid
+from typing import Any
 
 from asyncpg import Record
 from asyncpg.exceptions import UniqueViolationError
 from chats import utils
 from chats.models import Member, Message, Room
-from chats.schemas import RoomName, RoomOut, UserWeb
+from chats.schemas import Friend, RoomName, RoomOut, UserWeb
 from db import database
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
@@ -22,11 +23,13 @@ manager = utils.ConnectionManager()
 PROTECTED = Depends(get_current_user)
 
 
-@router.post("/room", status_code=status.HTTP_201_CREATED)
-async def create_room(room_name: RoomName, user: Record = PROTECTED) -> JSONResponse:
+@router.post("/room", response_model=RoomOut, status_code=status.HTTP_201_CREATED)
+async def create(room_name: RoomName, user: UserWeb = PROTECTED) -> Any:
     try:
-        await db_room.create(room_name.name, user.id)
-        return JSONResponse({"detail": "OK"}, status.HTTP_201_CREATED)
+        room = await db_room.create(room_name.name, room_name.privat)
+        if room:
+            await db_member.create(room.id, user.id)
+            return room
     except UniqueViolationError:
         return JSONResponse(
             {"detail": "This room already exists."},
@@ -35,7 +38,7 @@ async def create_room(room_name: RoomName, user: Record = PROTECTED) -> JSONResp
 
 
 @router.get("/room/{name}", response_model=RoomOut, status_code=status.HTTP_200_OK)
-async def get_room(name: str, user: Record = PROTECTED) -> JSONResponse:
+async def get_room(name: str, user: UserWeb = PROTECTED) -> JSONResponse:
     return await db_room.by_name(name) or NOT_FOUND
 
 
@@ -44,7 +47,7 @@ async def get_members(
     name: str,
     page: int = Query(1, ge=1),
     limit: int = Query(LIMIT, ge=LIMIT, lt=LIMIT_MAX),
-    user: Record = PROTECTED
+    user: UserWeb = PROTECTED
 ) -> list[Record] | list[None] | JSONResponse:
     """Выдает список участников комнаты, доступна только для участников комнаты."""
     room = await db_member.user_in_room(name, user.id)
@@ -56,19 +59,33 @@ async def get_members(
     )
 
 
+@router.post("/room/{name}", status_code=status.HTTP_201_CREATED)
+async def add_user_in_chat(name: str, friend: Friend, user: UserWeb = PROTECTED) -> JSONResponse:
+    room = await db_member.user_in_room(name, user.id)
+    if room:
+        _friend = await db_user.is_username(friend.username)
+        if _friend:
+            if await db_member.create(room.id, _friend.id):
+                return JSONResponse({"detail": "OK"}, status.HTTP_201_CREATED)
+    return JSONResponse(
+        {"detail": "This user has already been added."},
+        status.HTTP_403_FORBIDDEN,
+    )
+
+
 @router.get("/rooms", response_model=list[RoomOut], status_code=status.HTTP_200_OK)
 async def get_all_rooms(
     page: int = Query(1, ge=1),
     limit: int = Query(LIMIT, ge=LIMIT, lt=LIMIT_MAX),
-    is_active: bool = Query(False),
-    user: Record = PROTECTED,
+    is_active: bool = Query(True),
+    user: UserWeb = PROTECTED,
 ) -> list[Record] | list[None]:
     """Выдает список активных или вообще всех комнат, доступна пагинация."""
     return await db_room.all_rooms(page, limit, is_active)
 
 
 @router.delete("/room/{name}", status_code=status.HTTP_200_OK)
-async def delete_room(name: str, user: Record = PROTECTED) -> JSONResponse:
+async def delete_room(name: str, user: UserWeb = PROTECTED) -> JSONResponse:
     if not await db_room.delete(name):
         return NOT_FOUND
     return JSONResponse({"detail": "OK"}, status.HTTP_200_OK)
@@ -78,66 +95,83 @@ async def delete_room(name: str, user: Record = PROTECTED) -> JSONResponse:
 async def websocket_endpoint(
     websocket: WebSocket,
     room_name: str,
-    page: int = Query(1, ge=1),
     limit: int = Query(LIMIT, ge=LIMIT, lt=LIMIT_MAX),
     user: UserWeb = Depends(utils.get_current_user)
 ) -> None:
+    """
+    Структура сообщений между пользователем и сервером: {
+        "type": "Отключает соединение - disconnect или удаляет пользователя из группы - delete",
+        "page": "Выдает список сообщений. Лимит задается при подключении. - Номер страницы.",
+        "key": "uuid сообщения.",
+        "content": "Текст сообщения.",
+    }
+    """
+    room = await db_room.by_name(room_name, privat=True)
+    if room and room.privat is True:
+        if not await db_member.user_in_room(room_name, user.id):
+            return
 
-    room = await db_room.by_name(room_name)
     if user and room:
         try:
             await manager.connect(websocket, room.id)
-            """
-            Добавляет пользователя в список участников чата.
-            Если пользователь новый, уведомляет всех.
-            """
             if await db_member.create(room.id, user.id):
-                message = {"content": f"{user.username} has entered the chat"}
-                await manager.send_personal_message(message, websocket)
+                """
+                Добавляет пользователя в список участников группы.
+                Если пользователь новый, уведомляет всех.
+                """
+                message = {
+                    "room_id": room.id,
+                    "user_id": user.id,
+                    "content": f"{user.username} has entered the chat",
+                }
+                await manager.broadcast(message, room.id)
 
             while True:
                 message = await websocket.receive_json()
 
-                """Отключает соединение."""
-                if "type" in message and message["type"] == "disconnect":
+                if "type" in message and message["type"] in ["disconnect", "delete"]:
                     await manager.disconnect(websocket, room.id)
+                    if message["type"] == "delete":
+                        await db_member.remove(room.id, user.id)
+                        message = {
+                            "room_id": room.id,
+                            "user_id": user.id,
+                            "content": f"{user.username} has left the chat",
+                        }
+                        await manager.broadcast(message, room.id)
                     break
 
-                """Выдает список сообщений. Пагинация настраиваеться при подклбчении."""
-                if "messages" in message and message["messages"] == "get":
-                    messages_list = await db_message.get_all(room.id, page, limit)
+                if "page" in message and int(message["page"]) > 0:
+                    message_list = await db_message.get_all(room.id, int(message["page"]), limit)
                     all_messages = {
                         "room_id": room.id,
                         "user_id": user.id,
-                        "all_messages": messages_list
+                        "messages": [dict(i) for i in message_list if i]
                     }
                     await manager.send_personal_message(all_messages, websocket)
-
+                    continue
                 """
-                Сообщение из фронтенда приходит с uuid ключем 
+                Сообщение из фронтенда приходит с uuid ключем
                 по которому оно сохраняется и находиться в базе.
                 """
-                if "key" not in message or message["key"] == "":
-                    message["key"] = str(uuid.uuid4().hex)
+                if "key" not in message or not await utils.is_valid_uuid(message["key"]):
+                    message["key"] = uuid.uuid4().hex
 
-                """Текст сообщения. Сохраняет и отправляет уведосление о получении."""
-                if "content" in message and message["content"]:
-                    await db_message.create(
-                        message["key"],
-                        room.id,
-                        user.id,
-                        message["content"],
-                    )
-                    await manager.send_personal_message(
+                """Сохраняет и отправляет уведомление о получении сообщения для всех в группе."""
+                if "content" in message:
+                    if type(message["content"]) != str:
+                        message["content"] = str(message["content"])
+                    await db_message.create(message["key"], room.id, user.id, message["content"])
+                    await manager.broadcast(
                         {
                             "accepted": True,
-                            "key": message["key"]
+                            "key": message["key"],
+                            "room_id": room.id,
+                            "user_id": user.id,
+                            "content": message["content"],
                         },
-                        websocket,
+                        room.id,
                     )
 
         except WebSocketDisconnect:
-            await db_member.remove(room.id, user.id)
-            message = {"content": f"{user.username} has left the chat"}
-            await manager.send_personal_message(message, websocket)
             await manager.disconnect(websocket, room.id)

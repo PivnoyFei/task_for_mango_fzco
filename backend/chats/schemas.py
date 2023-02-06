@@ -13,17 +13,18 @@ class UserWeb(BaseModel):
     is_active: bool
 
 
-class MessageWeb(BaseModel):
-    user: UserWeb
-    content: str
+class Friend(BaseModel):
+    username: str
 
 
 class RoomName(BaseModel):
     name: str
+    privat: bool
 
 
 class RoomOut(RoomName):
     id: int
     timestamp: datetime
-    is_active: bool | None = False
+    privat: bool
+    is_active: bool = False
     is_count: int | None = 0

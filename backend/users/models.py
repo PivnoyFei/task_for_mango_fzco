@@ -10,7 +10,7 @@ user = sa.Table(
     sa.Column("email", sa.String(255), nullable=False, unique=True),
     sa.Column("phone", sa.String(14), nullable=False, unique=True),
     sa.Column("password", sa.String(255), nullable=False),
-    sa.Column("username", sa.String(150), nullable=False, unique=True, index=True),
+    sa.Column("username", sa.String(25), nullable=False, unique=True, index=True),
     sa.Column("firstname", sa.String(150), nullable=False),
     sa.Column("lastname", sa.String(150), nullable=False),
     sa.Column("image", sa.String(200), unique=True),
@@ -42,12 +42,12 @@ class User(Base):
 
     async def is_username(self, username: str) -> Record | None:
         return await self.database.fetch_one(
-            sa.select(user.c.username).where(user.c.username == username)
+            sa.select(user.c.id).where(user.c.username == username)
         )
 
     async def is_phone(self, phone: str) -> Record | None:
         return await self.database.fetch_one(
-            sa.select(user.c.phone).where(user.c.phone == phone)
+            sa.select(user.c.id).where(user.c.phone == phone)
         )
 
     async def password_by_username(self, username: str) -> Record | None:

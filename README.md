@@ -38,20 +38,21 @@
 
 | Название | Метод | Описание | Авторизация |
 |----------|-------|----------|-------------|
-| /api/users/signup           | POST | Регистрация нового пользователя         | Нет
-| /api/users/me               | GET  | Возвращает самого себя                  | Да
-| /api/users/&lt;username&gt; | GET  | Посмотреть профиль пользователя         | Нет
-| /api/users/&lt;username&gt; | PUT  | Редактировать профиль                   | Да
-| /api/auth/login             | POST | Авторизация, получение jwt-токена       | Нет
-| /api/auth/refresh           | POST | Обновить токен                          | Да
-| /api/auth/logout            | POST | Выйти, удаляет все refresh-токены из бд | Да
+| /api/users/signup           | POST | Регистрация нового пользователя           | Нет
+| /api/users/me               | GET  | Возвращает самого себя                    | Да
+| /api/users/&lt;username&gt; | GET  | Посмотреть профиль пользователя           | Нет
+| /api/users/&lt;username&gt; | PUT  | Редактировать профиль                     | Да
+| /api/auth/login             | POST | Авторизация, получение jwt-токена         | Нет
+| /api/auth/refresh           | POST | Обновить токен                            | Да
+| /api/auth/logout            | POST | Выйти, удаляет все refresh-токены из бд   | Да
 ||
-| /api/chat/room                          | POST   | Создать комнату для чата | Да
-| /api/chat/room/&lt;room_name&gt;        | GET    | Посмотреть комнату       | Да
+| /api/chat/room                          | POST   | Создать комнату для чата    | Да
+| /api/chat/room/&lt;room_name&gt;        | GET    | Посмотреть комнату          | Да
 | /api/chat/room/&lt;room_name&gt;/member | GET    | Посмотреть список участников комнаты, доступно только для участника | Да
-| /api/chat/rooms                         | GET    | Посмотреть все комнаты   | Да
-| /api/chat/rooms                         | DELETE | Удалить комнату          | Да
-| /api/chat/ws/&lt;room_name&gt;          | ws     | Вебсокет                 | Да
+| /api/chat/room/&lt;room_name&gt;        | POST   | Добавить пользователя в чат | Да
+| /api/chat/rooms                         | GET    | Посмотреть все комнаты      | Да
+| /api/chat/room/&lt;room_name&gt;        | DELETE | Удалить комнату             | Да
+| /api/chat/ws/&lt;room_name&gt;          | ws     | Вебсокет чат                | Да
 
 
 ### Запуск проекта

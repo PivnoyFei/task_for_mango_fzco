@@ -37,6 +37,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MEDIA_URL = "media"
 AVATAR_URL = "avatar"
 MEDIA_ROOT = os.path.join(BASE_DIR, MEDIA_URL)
+TESTS_ROOT = os.path.join(BASE_DIR, "tests")
 AVATAR_ROOT = os.path.join(BASE_DIR, MEDIA_URL, AVATAR_URL)
 
 LIMIT = 15

@@ -114,13 +114,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> type:
     return await check_token(token, settings.JWT_ACCESS_SECRET_KEY)
 
 
-async def image_delete(filename: str) -> None:
-    filename, extension = filename.split(".")
+async def image_delete(filename: str | None = None) -> None:
+    if filename:
+        filename, extension = filename.split(".")
 
-    for size in ["", *SIZES]:
-        image_path = os.path.join(AVATAR_ROOT, f"{filename}{size}.{extension}")
-        if os.path.isfile(image_path):
-            os.remove(image_path)
+        for size in SIZES:
+            image_path = os.path.join(AVATAR_ROOT, f"{filename}{size}.{extension}")
+            if os.path.isfile(image_path):
+                os.remove(image_path)
 
 
 async def base64_image(base64_data: str, extension: str = "jpg") -> str:

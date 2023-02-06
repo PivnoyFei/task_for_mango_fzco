@@ -1,6 +1,5 @@
 from typing import Any
 
-from asyncpg import Record
 from db import database
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
@@ -39,7 +38,7 @@ async def create_user(user: UserCreate) -> UserOut | JSONResponse:
 
 
 @router.get('/me', response_model=UserOut, status_code=status.HTTP_200_OK)
-async def me(user: Record = PROTECTED) -> UserOut:
+async def me(user: UserOut = PROTECTED) -> UserOut:
     """ Get details of currently logged in user. """
     return user
 
@@ -51,7 +50,7 @@ async def user_id(username: str) -> UserOut | JSONResponse:
 
 
 @router.put("/{username}", response_model=UserOut, status_code=status.HTTP_200_OK)
-async def update_user(user_obj: UserUpdate, username: str, user: Record = PROTECTED) -> Any:
+async def update_user(user_obj: UserUpdate, username: str, user: UserOut = PROTECTED) -> Any:
     """ Update_user {firstname, lastname, image}. """
     if username == user.username:
         if user_obj.image:

@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import sqlalchemy as sa
 from asyncpg import Record
 from asyncpg.exceptions import UniqueViolationError
@@ -11,9 +13,10 @@ ProjectType = list[Record] | list[None]
 room = sa.Table(
     "rooms", metadata,
     sa.Column("id", sa.Integer, primary_key=True),
-    sa.Column("name", sa.String(255), nullable=False, unique=True, index=True),
+    sa.Column("name", sa.String(100), nullable=False, unique=True, index=True),
     sa.Column("timestamp", sa.DateTime(timezone=True), default=func.now()),
-    sa.Column("is_active", sa.Boolean, default=False),
+    sa.Column("privat", sa.Boolean, nullable=False, default=False),
+    sa.Column("is_active", sa.Boolean, nullable=False, default=False),
 )
 member = sa.Table(
     "members", metadata,
@@ -34,37 +37,40 @@ message = sa.Table(
 
 
 class Room(Base):
-    async def create(self, name: str, user_id: int) -> Record | None:
+    async def create(self, name: str, privat: bool) -> Record | None:
         return await self.database.fetch_one(
-            sa.insert(room).values(name=name).returning(room)
+            sa.insert(room)
+            .values(name=name, privat=privat, is_active=False)
+            .returning(room)
         )
 
-    async def by_name(self, name: str) -> Record | None:
-        return await self.database.fetch_one(
+    async def by_name(self, name: str, privat: bool | None = False) -> Record | None:
+        qyery = (
             sa.select(room, func.count(member.c.user_id).label("is_count"))
-            .join(member, member.c.room_id == room.c.id)
+            .join(member, member.c.room_id == room.c.id, isouter=True)
             .where(room.c.name == name)
             .group_by(room.c.id)
         )
+        if not privat:
+            qyery.where(room.c.privat == sa.false)
+        return await self.database.fetch_one(qyery)
 
     async def all_rooms(
         self,
         page: int = 1,
         limit: int = LIMIT,
-        is_active: bool = False,
+        is_active: bool | None = True,
     ) -> ProjectType:
 
-        query = (
+        return await self.database.fetch_all(
             sa.select(room, func.count(member.c.user_id).label("is_count"))
-            .join(member, member.c.room_id == room.c.id)
+            .join(member, member.c.room_id == room.c.id, isouter=True)
+            .where(room.c.privat == False, room.c.is_active == is_active)
             .limit(limit)
             .offset((page - 1) * limit)
             .group_by(room.c.id)
             .order_by(room.c.timestamp.desc())
         )
-        if is_active:
-            query.where(room.c.is_active == is_active)
-        return await self.database.fetch_all(query)
 
     async def update_is_active(self, room_id: int, bool_value: bool) -> Record | None:
         return await self.database.fetch_one(
@@ -82,12 +88,11 @@ class Room(Base):
 
 
 class Member(Base):
-    async def create(self, room_id: int, user_id: int) -> int | None:
+    async def create(self, room_id: int, user_id: int) -> Record | bool:
         try:
-            await self.database.execute(
+            return await self.database.execute(
                 sa.insert(member).values(user_id=user_id, room_id=room_id)
             )
-            return True
         except UniqueViolationError:
             return False
 
@@ -127,7 +132,7 @@ class Member(Base):
 
 
 class Message(Base):
-    async def create(self, key: str, room_id: int, user_id: int, content: str) -> int | None:
+    async def create(self, key: UUID, room_id: int, user_id: int, content: str) -> int | None:
         try:
             return await self.database.execute(
                 sa.insert(message)
@@ -143,7 +148,7 @@ class Message(Base):
 
     async def get_all(self, room_id: int, page: int = 1, limit: int = LIMIT) -> ProjectType:
         return await self.database.fetch_all(
-            sa.select(message.c.id, message.c.content, message.c.create)
+            sa.select(message)
             .where(message.c.room_id == room_id)
             .limit(limit)
             .offset((page - 1) * limit)

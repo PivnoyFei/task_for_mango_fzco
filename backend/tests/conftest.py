@@ -1,4 +1,5 @@
 import dataclasses
+import os
 from typing import Any, Generator
 
 import pytest
@@ -6,13 +7,13 @@ import sqlalchemy
 from db import metadata
 from fastapi.testclient import TestClient
 from main import app
-from settings import DATABASE_URL, TEST_HOST
+from settings import DATABASE_URL, TEST_HOST, TESTS_ROOT
 
 
 @dataclasses.dataclass
 class Cache:
-    headers = {"authorization": "Bearer"}
-    headers_other = {"authorization": "Bearer"}
+    headers = {"Authorization": "Bearer"}
+    headers_other = {"Authorization": "Bearer"}
     refresh_token = {"refresh_token": ""}
 
 
@@ -106,5 +107,16 @@ def username_exists() -> dict:
 
 
 @pytest.fixture
+def image() -> str:
+    with open(os.path.join(TESTS_ROOT, "imageBase64.txt")) as f:
+        return f.readline()
+
+
+@pytest.fixture
 def room() -> dict:
-    return {"name": "fakeroom"}
+    return {"name": "room", "privat": False}
+
+
+@pytest.fixture
+def room_privat() -> dict:
+    return {"name": "room_privat", "privat": True}

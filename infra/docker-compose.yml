@@ -12,17 +12,6 @@ services:
     ports:
       - 5432:5432
 
-  mongo:
-    container_name: mongo
-    image: mongo:latest
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: rootpassword
-    ports:
-      - 27017:27017
-    volumes:
-      - mongodb_data:/data/db
-
   redis:
     container_name: ${REDIS_HOST}
     image: redis:latest
