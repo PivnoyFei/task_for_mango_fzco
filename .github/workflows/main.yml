@@ -44,9 +44,9 @@ jobs:
           cat .env
       - name: Build docker image backend-test
         run: |
-          cd test
+          cd tests
           sudo docker-compose up -d --build
       - name: Pytest
         run: |
-          cd test
+          cd tests
           sudo docker-compose exec -T backend-test pytest
