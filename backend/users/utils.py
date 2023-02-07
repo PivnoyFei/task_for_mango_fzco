@@ -16,8 +16,8 @@ from passlib.hash import bcrypt
 from PIL import Image
 from pydantic import ValidationError
 from redis import Redis
-from settings import (ALLOWED_TYPES, AVATAR_ROOT, INVALID_FILE, INVALID_TYPE,
-                      REDIS_URL, SIZES, AVATAR_URL, MEDIA_URL)
+from settings import (ALLOWED_TYPES, AVATAR_ROOT, AVATAR_URL, INVALID_FILE,
+                      INVALID_TYPE, MEDIA_URL, REDIS_URL, SIZES)
 from starlette.requests import Request
 from users.models import User
 from users.schemas import TokenPayload
