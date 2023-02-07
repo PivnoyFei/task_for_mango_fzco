@@ -10,9 +10,10 @@ from db import database
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 from settings import LIMIT, LIMIT_MAX, NOT_FOUND
+from starlette.requests import Request
 from starlette.websockets import WebSocket, WebSocketDisconnect
 from users.models import User
-from users.utils import get_current_user
+from users.utils import get_current_user, list_path_image
 
 router = APIRouter(prefix='/chat', tags=["chat"])
 db_room = Room(database)
@@ -44,6 +45,7 @@ async def get_room(name: str, user: UserWeb = PROTECTED) -> JSONResponse:
 
 @router.get("/room/{name}/member", response_model=list[UserWeb], status_code=status.HTTP_200_OK)
 async def get_members(
+    request: Request,
     name: str,
     page: int = Query(1, ge=1),
     limit: int = Query(LIMIT, ge=LIMIT, lt=LIMIT_MAX),
@@ -52,7 +54,7 @@ async def get_members(
     """Выдает список участников комнаты, доступна только для участников комнаты."""
     room = await db_member.user_in_room(name, user.id)
     if room:
-        return await db_member.by_room_id(room.id, page, limit)
+        return await list_path_image(request, await db_member.by_room_id(room.id, page, limit))
     return JSONResponse(
         {"detail": "Need to join a group"},
         status.HTTP_403_FORBIDDEN,

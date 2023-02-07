@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import aiofiles
 import settings
+from asyncpg import Record
 from db import database
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -16,7 +17,8 @@ from PIL import Image
 from pydantic import ValidationError
 from redis import Redis
 from settings import (ALLOWED_TYPES, AVATAR_ROOT, INVALID_FILE, INVALID_TYPE,
-                      REDIS_URL, SIZES)
+                      REDIS_URL, SIZES, AVATAR_URL, MEDIA_URL)
+from starlette.requests import Request
 from users.models import User
 from users.schemas import TokenPayload
 
@@ -150,3 +152,25 @@ async def base64_image(base64_data: str, extension: str = "jpg") -> str:
     except (Exception, TypeError, binascii.Error, ValueError):
         raise HTTPException(status.HTTP_418_IM_A_TEAPOT, INVALID_FILE)
     return f"{filename}.{extension}"
+
+
+async def path_image(request: Request, user_dict: Record | None = None) -> dict | None:
+    if user_dict:
+        if user_dict.image:
+            path = f"{request.base_url}{MEDIA_URL}/{AVATAR_URL}/"
+            result = dict(user_dict)
+            result["image"] = path + result["image"]
+            return result
+    return user_dict
+
+
+async def list_path_image(request: Request, user_list: list) -> list[dict] | list[None]:
+    if user_list:
+        result = [dict(i) for i in user_list]
+        path = f"{request.base_url}{MEDIA_URL}/{AVATAR_URL}/"
+        for r in result:
+            if r["image"]:
+                r["image"] = path + r["image"]
+        return result
+    else:
+        return user_list

@@ -4,6 +4,7 @@ from db import database
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 from settings import NOT_FOUND
+from starlette.requests import Request
 from users import utils
 from users.models import User
 from users.schemas import UserCreate, UserOut, UserUpdate
@@ -14,7 +15,7 @@ PROTECTED = Depends(utils.get_current_user)
 
 
 @router.post("/signup", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-async def create_user(user: UserCreate) -> UserOut | JSONResponse:
+async def create_user(request: Request, user: UserCreate) -> Any:
 
     if await db_user.is_email(user.email):
         return JSONResponse({"message": "Email already exists"}, status.HTTP_400_BAD_REQUEST)
@@ -34,23 +35,28 @@ async def create_user(user: UserCreate) -> UserOut | JSONResponse:
         if user.image:
             await utils.image_delete(user.image)
         return JSONResponse({"detail": "Error users"}, status.HTTP_400_BAD_REQUEST)
-    return newuser
+    return await utils.path_image(request, newuser)
 
 
 @router.get('/me', response_model=UserOut, status_code=status.HTTP_200_OK)
-async def me(user: UserOut = PROTECTED) -> UserOut:
+async def me(request: Request, user: UserOut = PROTECTED) -> Any:
     """ Get details of currently logged in user. """
-    return user
+    return await utils.path_image(request, user)
 
 
 @router.get("/{username}", response_model=UserOut, status_code=status.HTTP_200_OK)
-async def user_id(username: str) -> UserOut | JSONResponse:
+async def user_id(request: Request, username: str) -> dict | JSONResponse:
     """ User profile. Available to all users. """
-    return await db_user.by_username(username) or NOT_FOUND
+    return await utils.path_image(request, await db_user.by_username(username)) or NOT_FOUND
 
 
 @router.put("/{username}", response_model=UserOut, status_code=status.HTTP_200_OK)
-async def update_user(user_obj: UserUpdate, username: str, user: UserOut = PROTECTED) -> Any:
+async def update_user(
+    request: Request,
+    user_obj: UserUpdate,
+    username: str,
+    user: UserOut = PROTECTED
+) -> Any:
     """ Update_user {firstname, lastname, image}. """
     if username == user.username:
         if user_obj.image:
@@ -64,7 +70,7 @@ async def update_user(user_obj: UserUpdate, username: str, user: UserOut = PROTE
             result = await db_user.update(username, user_dict)
             if user_obj.image:
                 await utils.image_delete(user.image)
-            return result
+            return await utils.path_image(request, result)
 
         except Exception:
             if user_obj.image:

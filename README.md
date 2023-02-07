@@ -127,7 +127,7 @@ docker-compose exec backend alembic revision --message="Initial" --autogenerate
 docker-compose exec backend alembic upgrade head
 ```
 
-### Документация доступна по адресу
+### Документация будет доступна по адресу:
 ```bash
 http://127.0.0.1:8000/docs/
 http://127.0.0.1:8000/redoc/
