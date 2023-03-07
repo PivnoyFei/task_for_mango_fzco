@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from settings import AVATAR_ROOT, AVATAR_URL, MEDIA_ROOT, MEDIA_URL
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.requests import Request
 from users import api_auth, api_users
 
 app = FastAPI(title="Test task for MANGO FZCO", openapi_url="/api/openapi.json",)
@@ -53,11 +54,11 @@ async def validation_exception_handler(request: Any, exc: Any) -> JSONResponse:
 
 
 @app.get('/')
-async def main() -> dict[str, str]:
+async def main(request: Request) -> dict[str, str]:
     return {
         "app": "Test task for MANGO FZCO",
-        "doc_path": "/docs",
-        "redoc_path": "/redoc",
+        "doc_path": f"{request.base_url}docs",
+        "redoc_path": f"{request.base_url}redoc",
     }
 
 
